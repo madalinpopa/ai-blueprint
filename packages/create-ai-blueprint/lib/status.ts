@@ -26,7 +26,8 @@ import { readProjectConfig } from "./project-config.js";
 import type {
   ProjectConfig,
   ProjectConfigState,
-  QualityGatePolicy
+  QualityGatePolicy,
+  VcsType
 } from "./project-config.js";
 import { readProjectMetadata } from "./project-metadata.js";
 import type { ProjectAdapter } from "./project-metadata.js";
@@ -334,9 +335,9 @@ function formatHumanStatus(
     formatRow("Review", formatReviewValue(status.review, style), style),
     formatRow("Completion", formatCompletionValue(status.completion, style), style),
     "",
-    formatSection("Git", style)
+    formatSection(vcsLabels(status.git.vcsType).name, style)
   );
-  appendGitLines(lines, status.git, style);
+  appendVcsLines(lines, status.git, style);
 
   if (status.warnings.length > 0) {
     lines.push("", formatSection("Attention", style));
@@ -509,13 +510,38 @@ function formatCompletionValue(
   return style.red(`blocked: ${completion.blockers.join("; ")}`);
 }
 
-function appendGitLines(
+function vcsLabels(vcsType: VcsType): {
+  name: string;
+  branch: string;
+  branchWord: string;
+  lastCommit: string;
+} {
+  return vcsType === "jj"
+    ? {
+        name: "Jujutsu",
+        branch: "Bookmark",
+        branchWord: "bookmark",
+        lastCommit: "Change description"
+      }
+    : {
+        name: "Git",
+        branch: "Branch",
+        branchWord: "branch",
+        lastCommit: "Last commit"
+      };
+}
+
+function appendVcsLines(
   lines: string[],
   git: VcsStatusSummary,
   style: TextStyle
 ): void {
+  const labels = vcsLabels(git.vcsType);
+
   if (!git.available) {
-    lines.push(formatRow("Status", style.red("not a Git repository"), style));
+    lines.push(
+      formatRow("Status", style.red(`not a ${labels.name} repository`), style)
+    );
     return;
   }
 
@@ -532,13 +558,13 @@ function appendGitLines(
     : style.yellow(remote);
 
   lines.push(
-    formatRow("Branch", git.branch || "unknown", style),
+    formatRow(labels.branch, git.branch || "unknown", style),
     formatRow("Working tree", workingTree, style),
     formatRow("Remote", coloredRemote, style)
   );
 
   if (git.lastCommit) {
-    lines.push(`  ${style.cyan("Last commit")}`, `    ${git.lastCommit}`);
+    lines.push(`  ${style.cyan(labels.lastCommit)}`, `    ${git.lastCommit}`);
   }
 }
 
@@ -712,7 +738,7 @@ function selectCompletion(
   }
 
   if (!git.available) {
-    blockers.push("Git repository is unavailable");
+    blockers.push(`${vcsLabels(git.vcsType).name} repository is unavailable`);
   } else if (
     currentWork.type &&
     !isMatchingWorkBranch(git.branch, currentWork.type, config)
@@ -1063,7 +1089,7 @@ function findDrift(
   ) {
     warnings.push({
       code: "work_branch_mismatch",
-      message: `Active ${currentWork.type} work does not match branch ${git.branch}.`
+      message: `Active ${currentWork.type} work does not match ${vcsLabels(git.vcsType).branchWord} ${git.branch}.`
     });
   }
 
