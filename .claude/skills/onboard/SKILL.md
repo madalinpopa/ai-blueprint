@@ -41,11 +41,17 @@ git rev-parse --is-inside-work-tree
 git rev-parse --verify HEAD
 ```
 
-If this is not a Git repository, stop and ask the user to initialize one, then
-rerun `/onboard`.
+If this is neither a Git nor a Jujutsu repository, stop and ask the user to
+initialize one, then rerun `/onboard`. A `.jj/` workspace counts, whether or not
+it is colocated with Git.
 
 An existing first commit may contain only the scaffold or may already contain
 Blueprint. Both are valid. Do not ask the user to rewrite either history shape.
+
+The unborn `HEAD` handling below is Git-specific. Jujutsu has no unborn state,
+because the working copy is always a real change; a fresh workspace simply has no
+bookmark yet. There, describe the working change and create the default bookmark
+instead of building a scaffold commit, with the same single approval.
 
 If Git reports an unborn `HEAD`, handle it here instead of sending the user away
 to run Git commands:
@@ -104,6 +110,8 @@ Read only enough to identify the setup:
 - whether Blueprint workflow paths are already tracked by git
 - existing verification commands and `.github/workflows/`
 - `blueprint/config.json`, when present, and whether it parses cleanly
+- whether the workspace has `.jj/`, `.git/`, or both, since a Jujutsu workspace
+  is often colocated with Git
 - project name, from `package.json`, the folder name, existing docs, or the user
 
 Do not infer more than the files support. Mark uncertain items as `> TODO` in the
@@ -189,6 +197,19 @@ audits. Never put
 commands, product requirements, communication prose, secrets, or permission for
 commits, merges, pushes, deployments, publication, destructive actions, failed
 checks, or finding waivers into config.
+
+Unless the user already chose it, ask one short **Version control** question
+using the current tool's selectable prompt when available:
+
+1. **Git** - write `vcs: "git"`.
+2. **Jujutsu (jj)** - write `vcs: "jj"`.
+
+Preselect Jujutsu when the workspace has `.jj/`, but still ask; never switch
+version control systems silently. A colocated workspace has both `.jj/` and
+`.git/`, and there Jujutsu is the one driving the working copy. Show the current
+value before asking and preserve it if the user does not want a change. The
+setting decides which commands later skills run. It grants no permission to
+commit, merge, or push in either system.
 
 Unless the user already chose these values, ask one short **Implementation
 style** question using the current tool's selectable prompt when available:
