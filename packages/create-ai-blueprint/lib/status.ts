@@ -18,8 +18,8 @@ import type {
   FindingsSummary,
   FindingStatus
 } from "./findings.js";
-import { readGitStatus } from "./git-status.js";
-import type { GitStatusSummary } from "./git-status.js";
+import { readGitStatus } from "./vcs-status.js";
+import type { GitStatusSummary } from "./vcs-status.js";
 import { readHistory } from "./history.js";
 import type { HistoryItem, HistorySummary } from "./history.js";
 import { readProjectConfig } from "./project-config.js";
