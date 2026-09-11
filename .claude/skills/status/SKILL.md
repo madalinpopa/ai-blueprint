@@ -19,7 +19,8 @@ break, a context clear, or a day away. It never changes anything: no edits, no
 commits, no installs, no builds, no branch changes.
 
 Progress in this workflow lives in files, not the chat, so everything this skill
-reports comes from disk and git. That is the point: a fresh session can run
+reports comes from disk and the configured version control system. That is the
+point: a fresh session can run
 `/status` and know exactly as much as the last one did.
 
 For setup problems, missing files, placeholder plans, adapter drift, or questions
@@ -72,12 +73,23 @@ state.
    as current for backward compatibility. Recommend `/overview` only when the
    recorded hash matches neither value. Do not use filesystem timestamps;
    `/complete` legitimately makes `build-plan.md` newer when it checks off work.
-7. **Git** - current branch, whether the working tree is clean or has uncommitted
-   changes, roughly how many files changed, last commit subject, and whether the
-   branch is ahead of its remote. If the directory is not a git repo, say so and
-   skip this part rather than failing.
+7. **Version control** - read `vcs` from `blueprint/config.json` first; a
+   missing or unreadable config means `git`. Report the current branch, whether
+   the working tree is clean or has uncommitted changes, roughly how many files
+   changed, the last commit subject, and whether the branch is ahead of its
+   remote. If the directory is not a repository of the configured kind, say so
+   and skip this part rather than failing.
+   - Under `vcs: "jj"`, use `jj` and its vocabulary: **bookmark** rather than
+     branch, and the working change description rather than a commit subject.
+     `jj status` and `jj diff --summary` show the working copy; `jj log` reads
+     the bookmark and description.
+   - A bookmark does not follow the working copy. After `jj new`, `@` carries no
+     bookmark and it stays on the parent change, so read the nearest bookmark
+     reachable from `@` rather than only the bookmarks on `@`.
+   - Jujutsu tracks new files automatically, so there is no untracked category to
+     report separately.
 8. **Progress drift** - flag active spec on `main`, a spec in progress but no
-   branch matching the configured feature, fix, or rollback prefix, all spec steps checked but
+   branch or bookmark matching the configured feature, fix, or rollback prefix, all spec steps checked but
    not completed, or disagreement between `build-plan.md` and
    `current-feature.md`. A rollback legitimately targets a checked build-plan
    item until `/complete` unchecks it, so do not compare it to the next unchecked
@@ -114,6 +126,7 @@ A short, scannable summary, not a wall of text. Aim for something like:
     Findings: 1 open P2 (F-04), 1 fixed P1 awaiting re-review (F-02).
     Review: pending for Claude Code with the selected model.
     Git: branch feature/pdf-export, 3 uncommitted files, last commit "feat: widen export helper".
+    (Jujutsu: bookmark feature/pdf-export, 3 changed files, change description "feat: widen export helper".)
     Watch: F-02 is fixed but not re-reviewed; it blocks /complete until /audit closes it.
 
     Next action: run /implement for Step 3.

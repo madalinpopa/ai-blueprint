@@ -307,6 +307,11 @@ then obtain explicit commit approval. Only then stage the reviewed branch work
 `fix: <name>`, or `revert: roll back <feature>`). `Verify`, or the fallback build
 and tests, must pass first.
 
+Under `vcs: "jj"` there is nothing to stage, because the working copy is already
+a change. Describe it with `jj describe -m "<conventional message>"` and point the
+work bookmark at it with `jj bookmark set <name> -r @`. The approval requirement
+is identical.
+
 ## Step 3 - merge
 
 1. Confirm the recorded local default branch has not advanced and the final work
@@ -319,7 +324,15 @@ and tests, must pass first.
 3. Stop and ask whether to push local `main` to its upstream. The merge approval
    does not count as push approval.
 4. Push main only after a separate explicit yes to push main in the current chat.
-   If the repo has no remote or upstream, say so instead of guessing.
+   If the repo has no remote or upstream, say so instead of guessing. Under
+   `vcs: "jj"` the push is `jj git push --remote <remote> -b <bookmark>`, and it
+   needs the same separate explicit yes.
+
+Under `vcs: "jj"`, Step 3 works on bookmarks rather than branches. Move the
+default bookmark to the squashed result and delete the work bookmark with
+`jj bookmark delete <name>` as the approved cleanup. Jujutsu keeps the operation
+log, so never treat `jj undo` or `jj op restore` as a substitute for the recorded
+proof this skill requires.
 
 Then point the user at `/feature`, `/fix`, or `/rollback` for the next thing.
 

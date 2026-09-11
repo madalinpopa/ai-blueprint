@@ -53,7 +53,9 @@ when you just want something done.
    feature (scope, dependencies, size); it writes nothing. Then run `/feature`
    (no number = the next unchecked item in `build-plan.md`) to generate
    @blueprint/context/current-feature.md, then review it together before any code.
-2. **Branch** - Create a new branch for the feature/fix.
+2. **Branch** - Create a new branch for the feature/fix. Under `vcs: "jj"` this
+   is a bookmark of the same name, and the rest of the loop reads the same way
+   with bookmarks in place of branches.
 3. **Implement** - Build one small step from the spec at a time, not the whole
    feature as one undifferentiated change.
 4. **Review** - By default, implement and verify each small step, then show one
@@ -134,8 +136,9 @@ enable checkpoint prompts by itself. The previous workflow uses
     publish unless the user gives a separate yes in the current chat.
 
 **Resuming after a context clear.** Progress lives in files, not the chat:
-`current-feature.md` holds the spec with each step checked off as it's done, and git
-holds the code (branch, commits, working tree). A fresh `/implement` or
+`current-feature.md` holds the spec with each step checked off as it's done, and
+the version control system configured as `vcs` holds the code (branch or
+bookmark, commits or changes, working copy). A fresh `/implement` or
 `$implement` run loads `current-feature.md` on demand and continues from the
 first unchecked step, so no separate save or load command is needed.
 

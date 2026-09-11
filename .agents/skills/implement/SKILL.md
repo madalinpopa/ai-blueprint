@@ -44,9 +44,12 @@ for its type with the work title: lowercase ASCII letters and digits, replace
 each run of other characters with one hyphen, and trim edge hyphens. Feature
 titles come from the named build-plan item; fix and rollback titles come from
 their spec heading or target. Stop if the type or title is ambiguous. Create or
-switch to that exact branch and never implement on the default branch. On
-resume, start at the first unchecked build step and use git status plus the
-checked boxes to distinguish finished work from unfinished work.
+switch to that exact branch and never implement on the default branch. Under
+`vcs: "jj"` the same rule applies to the bookmark of that name: create it with
+`jj bookmark create <name>`, and never implement on the default bookmark. On
+resume, start at the first unchecked build step and use `git status`, or
+`jj status` under Jujutsu, plus the checked boxes to distinguish finished work
+from unfinished work.
 
 If the spec says `Type: Rollback`, read and follow
 `reference/rollback-implementation.md` before changing product files. Do not load
@@ -87,6 +90,13 @@ exists. Continue only after approval.
 Checkpoint commits are offered only when `workflow.checkpointCommits` is
 `enabled` and the current review gate was approved. Never commit without current
 approval. `/complete` owns the final work-level commit and merge.
+
+Under `vcs: "jj"` there is no staging area and no separate commit step, because
+the working copy is already a change. An approved checkpoint is therefore
+`jj describe -m "<step message>"` to set the working change description, followed
+by `jj new` to start the next step on top of it. Approval is still required
+exactly as it is for a Git checkpoint commit; the absence of a staging step
+changes the commands, never the permission.
 
 Do not create a separate tool round merely to narrate a passing internal step.
 Keep the durable checkbox current and continue. Split a step when its diff is too
