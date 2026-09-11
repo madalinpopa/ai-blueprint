@@ -21,6 +21,7 @@ test("default config reviews sensitive work automatically", () => {
   };
 
   assert.deepEqual(defaults.qualityGates.regular, defaultGates);
+  assert.equal(defaults.vcs, "git");
   assert.deepEqual(defaults.qualityGates.continuous, defaultGates);
   assert.equal(defaults.workflow.stepReview, "feature");
   assert.equal(defaults.workflow.checkpointCommits, "disabled");
@@ -58,6 +59,7 @@ test("readProjectConfig merges partial project values over defaults", async (t) 
   const projectRoot = await createProject(t);
   await writeConfig(projectRoot, {
     schemaVersion: 1,
+    vcs: "jj",
     git: {
       featureBranchPrefix: "feat/"
     },
@@ -82,6 +84,7 @@ test("readProjectConfig merges partial project values over defaults", async (t) 
   const result = await readProjectConfig(projectRoot);
 
   assert.equal(result.state, "project");
+  assert.equal(result.values.vcs, "jj");
   assert.equal(result.values.git.featureBranchPrefix, "feat/");
   assert.equal(result.values.git.fixBranchPrefix, "fix/");
   assert.equal(result.values.review.independentExecution, "automatic");
@@ -184,6 +187,10 @@ test("readProjectConfig rejects unknown and invalid values", async (t) => {
       review: { independentExecution: "background" }
     }),
     /review\.independentExecution must be one of/
+  );
+  assert.throws(
+    () => parseProjectConfig({ schemaVersion: 1, vcs: "hg" }),
+    /vcs must be one of/
   );
 });
 

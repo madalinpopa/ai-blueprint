@@ -48,6 +48,12 @@ branch names and automated-mode limits. It never grants permission to commit,
 merge, push, deploy, publish, send, delete data, waive a failing check, or accept
 a finding. Those approval and safety boundaries are not configurable.
 
+`vcs` selects the version control system this project uses, `git` or `jj` for
+Jujutsu. It defaults to `git`, and an omitted value keeps that default, so
+existing projects are unchanged. The setting decides which commands workflow
+skills run and whether branch or bookmark names are reported. It never grants
+permission to commit, merge, push, or take destructive action in either system.
+
 `qualityGates.regular` controls automatic audit, independent-review, check, and
 try-guide behavior for the normal workflow and Autopilot.
 `qualityGates.continuous` controls the same per-feature gates for Continuous

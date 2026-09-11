@@ -7,6 +7,7 @@ import path from "node:path";
 const PROJECT_CONFIG_PATH = "blueprint/config.json";
 const PROJECT_CONFIG_SCHEMA_VERSION = 1 as const;
 
+type VcsType = "git" | "jj";
 type StepReviewPolicy = "every" | "feature";
 type CheckpointCommitPolicy = "disabled" | "enabled";
 type LogicTestPolicy = "required" | "when-configured";
@@ -27,6 +28,7 @@ interface QualityGatePolicy {
 
 interface ProjectConfig {
   schemaVersion: typeof PROJECT_CONFIG_SCHEMA_VERSION;
+  vcs: VcsType;
   workflow: {
     stepReview: StepReviewPolicy;
     checkpointCommits: CheckpointCommitPolicy;
@@ -69,6 +71,7 @@ interface ProjectConfigResult {
 function createDefaultProjectConfig(): ProjectConfig {
   return {
     schemaVersion: PROJECT_CONFIG_SCHEMA_VERSION,
+    vcs: "git",
     workflow: {
       stepReview: "feature",
       checkpointCommits: "disabled"
@@ -177,6 +180,7 @@ function parseProjectConfig(value: unknown): ProjectConfig {
     root,
     [
       "schemaVersion",
+      "vcs",
       "workflow",
       "git",
       "verification",
@@ -234,6 +238,7 @@ function parseProjectConfig(value: unknown): ProjectConfig {
 
   return {
     schemaVersion: PROJECT_CONFIG_SCHEMA_VERSION,
+    vcs: optionalEnum(root.vcs, ["git", "jj"], defaults.vcs, "vcs"),
     workflow: {
       stepReview: optionalEnum(
         workflow.stepReview,
@@ -500,5 +505,6 @@ export type {
   QualityGatePolicy,
   StepReviewPolicy,
   TryGuideGatePolicy,
-  UiEvidencePolicy
+  UiEvidencePolicy,
+  VcsType
 };

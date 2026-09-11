@@ -166,7 +166,8 @@ older version is removed during update; a locally modified copy keeps the normal
 conflict protection. The `blueprint/.state/manifest.json` file records the
 installed version and hashes of managed files.
 
-`blueprint/config.json` is user-owned project policy. It controls review cadence,
+`blueprint/config.json` is user-owned project policy. It controls the version
+control system, review cadence,
 checkpoint availability, branch prefixes, verification strictness, independent-review execution, regular and
 Continuous quality gates, and Continuous Mode limits. Audit, independent-review,
 check, and try-guide gates use built-in defaults. Independent review defaults to
@@ -180,6 +181,12 @@ blocks mutating workflow skills until `/doctor` identifies the repair.
 Configuration never grants permission to
 commit, merge, push, deploy, publish, or take destructive action. Only an
 explicit `/continuous` or `$continuous` request starts the multi-feature loop.
+
+`vcs` names the version control system the workflow uses, `git` or `jj` for
+Jujutsu. It defaults to `git`, and an omitted value keeps that default, so
+existing projects are unchanged. The setting selects the commands workflow
+skills run; it never grants permission to commit, merge, push, or take
+destructive action.
 
 `review.independentExecution` defaults to `automatic`, which uses a fresh
 isolated reviewer child when a selected independent-review gate runs
