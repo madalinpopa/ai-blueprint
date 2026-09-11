@@ -242,6 +242,66 @@ test("readProjectStatus uses configured branch prefixes", async (t) => {
   );
 });
 
+test("readProjectStatus reads a Jujutsu workspace through its bookmark", async (t) => {
+  const projectRoot = await createProject(t, {
+    currentWork: `# Feature: Status command
+
+**From build-plan:** feature 2
+**Status:** in progress
+
+## Build steps
+
+- [ ] **Step 1 - Print status** - format the result.
+`,
+    findings: emptyFindings(),
+    branch: "feature/status-command",
+    vcs: "jj"
+  });
+
+  const status = await readProjectStatus(projectRoot);
+
+  assert.equal(status.configuration.values.vcs, "jj");
+  assert.equal(status.git.available, true);
+  assert.equal(status.git.vcsType, "jj");
+  // The fixture leaves the working copy on an empty change, so this also proves
+  // the reader follows the bookmark on the parent rather than only reading `@`.
+  assert.equal(status.git.branch, "feature/status-command");
+  assert.ok(
+    status.warnings.every((warning) => warning.code !== "work_branch_mismatch")
+  );
+  assert.ok(
+    status.completion.blockers.every(
+      (blocker) => blocker !== "branch does not match feature work"
+    )
+  );
+});
+
+test("readProjectStatus warns about Jujutsu work on the default bookmark", async (t) => {
+  const projectRoot = await createProject(t, {
+    currentWork: `# Feature: Status command
+
+**From build-plan:** feature 2
+**Status:** in progress
+
+## Build steps
+
+- [ ] **Step 1 - Print status** - format the result.
+`,
+    findings: emptyFindings(),
+    branch: "main",
+    vcs: "jj"
+  });
+
+  const status = await readProjectStatus(projectRoot);
+
+  assert.equal(status.git.branch, "main");
+  assert.ok(
+    status.warnings.some(
+      (warning) => warning.code === "active_work_on_default_branch"
+    )
+  );
+});
+
 test("readProjectStatus warns when project config is invalid", async (t) => {
   const projectRoot = await createProject(t, {
     currentWork: resetCurrentWork(),
@@ -1073,6 +1133,7 @@ interface ProjectOptions {
   findings: string;
   branch: string;
   runState?: Record<string, unknown>;
+  vcs?: "git" | "jj";
 }
 
 async function createProject(
@@ -1152,6 +1213,21 @@ async function createProject(
     overviewTime
   );
 
+  if (options.vcs === "jj") {
+    await fs.writeFile(
+      path.join(projectRoot, "blueprint", "config.json"),
+      `${JSON.stringify({ schemaVersion: 1, vcs: "jj" }, null, 2)}\n`
+    );
+    // `--repository` needs a repo that already exists, so init takes the path.
+    await execFileAsync("jj", ["git", "init", projectRoot], { encoding: "utf8" });
+    await runJj(projectRoot, ["describe", "-m", "chore: create fixture"]);
+    await runJj(projectRoot, ["bookmark", "create", options.branch, "-r", "@"]);
+    // A new empty change, so the bookmark sits on the parent as it normally
+    // does in Jujutsu rather than on the working copy itself.
+    await runJj(projectRoot, ["new"]);
+    return projectRoot;
+  }
+
   await runGit(projectRoot, ["init", "-b", options.branch]);
   await runGit(projectRoot, ["config", "user.email", "status@example.com"]);
   await runGit(projectRoot, ["config", "user.name", "Status Test"]);
@@ -1162,6 +1238,12 @@ async function createProject(
 
 async function runGit(projectRoot: string, args: readonly string[]): Promise<void> {
   await execFileAsync("git", ["-C", projectRoot, ...args], {
+    encoding: "utf8"
+  });
+}
+
+async function runJj(projectRoot: string, args: readonly string[]): Promise<void> {
+  await execFileAsync("jj", ["--repository", projectRoot, ...args], {
     encoding: "utf8"
   });
 }
