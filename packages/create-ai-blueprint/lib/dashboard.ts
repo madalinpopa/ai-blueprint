@@ -636,9 +636,9 @@ const DASHBOARD_HTML: string = `<!doctype html>
             </div>
           </div>
           <div class="fact-group">
-            <div class="fact-group-heading"><div class="fact-group-label">Git</div><span class="pill" id="git-state">Loading</span></div>
+            <div class="fact-group-heading"><div class="fact-group-label" id="vcs-label">Git</div><span class="pill" id="git-state">Loading</span></div>
             <div class="facts">
-              <div class="fact"><span>Branch</span><span id="git-branch">-</span></div>
+              <div class="fact"><span id="vcs-branch-label">Branch</span><span id="git-branch">-</span></div>
               <div class="fact"><span>Changed</span><span id="git-changed">-</span></div>
               <div class="fact"><span>Upstream</span><span id="git-upstream">-</span></div>
             </div>
@@ -1063,6 +1063,9 @@ const DASHBOARD_HTML: string = `<!doctype html>
       setHistory(status.history);
 
       const git = status.git;
+      const isJj = git.vcsType === "jj";
+      byId("vcs-label").textContent = isJj ? "Jujutsu" : "Git";
+      byId("vcs-branch-label").textContent = isJj ? "Bookmark" : "Branch";
       setPill(
         "git-state",
         !git.available ? "unavailable" : git.clean ? "ok" : "warning",
