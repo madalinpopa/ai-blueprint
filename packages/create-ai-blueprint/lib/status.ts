@@ -19,7 +19,7 @@ import type {
   FindingStatus
 } from "./findings.js";
 import { readGitStatus } from "./vcs-status.js";
-import type { GitStatusSummary } from "./vcs-status.js";
+import type { VcsStatusSummary } from "./vcs-status.js";
 import { readHistory } from "./history.js";
 import type { HistoryItem, HistorySummary } from "./history.js";
 import { readProjectConfig } from "./project-config.js";
@@ -163,7 +163,7 @@ interface ProjectStatus {
   history: StatusHistory;
   findings: StatusFindings;
   review: StatusReview;
-  git: GitStatusSummary;
+  git: VcsStatusSummary;
   completion: StatusCompletion;
   nextAction: StatusNextAction;
   warnings: StatusWarning[];
@@ -509,7 +509,7 @@ function formatCompletionValue(
 
 function appendGitLines(
   lines: string[],
-  git: GitStatusSummary,
+  git: VcsStatusSummary,
   style: TextStyle
 ): void {
   if (!git.available) {
@@ -658,7 +658,7 @@ function selectCompletion(
   currentWork: CurrentWorkSummary,
   findings: FindingsSummary,
   review: IndependentReviewSummary,
-  git: GitStatusSummary,
+  git: VcsStatusSummary,
   config: ProjectConfig,
   configState: ProjectConfigState,
   runMode: RunMode,
@@ -1040,7 +1040,7 @@ function classifyWorkEvidence(
 function findDrift(
   buildPlan: BuildPlanSummary,
   currentWork: CurrentWorkSummary,
-  git: GitStatusSummary,
+  git: VcsStatusSummary,
   config: ProjectConfig
 ): StatusWarning[] {
   if (currentWork.state !== "active") {

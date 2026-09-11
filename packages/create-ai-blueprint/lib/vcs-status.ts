@@ -1,8 +1,11 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-interface GitStatusSummary {
+import type { VcsType } from "./project-config.js";
+
+interface VcsStatusSummary {
   available: boolean;
+  vcsType: VcsType;
   branch: string | null;
   clean: boolean | null;
   changedFiles: number;
@@ -14,9 +17,9 @@ interface GitStatusSummary {
 
 const execFileAsync = promisify(execFile);
 
-async function readGitStatus(projectRoot: string): Promise<GitStatusSummary> {
+async function readGitStatus(projectRoot: string): Promise<VcsStatusSummary> {
   if (!(await isGitRepository(projectRoot))) {
-    return unavailableSummary();
+    return unavailableSummary("git");
   }
 
   const porcelain = await runGit(projectRoot, [
@@ -46,6 +49,7 @@ async function readGitStatus(projectRoot: string): Promise<GitStatusSummary> {
 
   return {
     available: true,
+    vcsType: "git",
     branch,
     clean: changedFiles === 0,
     changedFiles,
@@ -75,7 +79,7 @@ async function readBranch(projectRoot: string): Promise<string> {
 
 async function readDivergence(
   projectRoot: string
-): Promise<Pick<GitStatusSummary, "ahead" | "behind">> {
+): Promise<Pick<VcsStatusSummary, "ahead" | "behind">> {
   const counts = await runOptionalGit(projectRoot, [
     "rev-list",
     "--left-right",
@@ -108,9 +112,10 @@ async function runGit(projectRoot: string, args: readonly string[]): Promise<str
   return result.stdout.trim();
 }
 
-function unavailableSummary(): GitStatusSummary {
+function unavailableSummary(vcsType: VcsType): VcsStatusSummary {
   return {
     available: false,
+    vcsType,
     branch: null,
     clean: null,
     changedFiles: 0,
@@ -123,4 +128,4 @@ function unavailableSummary(): GitStatusSummary {
 
 export { readGitStatus };
 
-export type { GitStatusSummary };
+export type { VcsStatusSummary };
