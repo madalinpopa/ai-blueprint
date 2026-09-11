@@ -18,7 +18,7 @@ import type {
   FindingsSummary,
   FindingStatus
 } from "./findings.js";
-import { readGitStatus } from "./vcs-status.js";
+import { readVcsStatus } from "./vcs-status.js";
 import type { VcsStatusSummary } from "./vcs-status.js";
 import { readHistory } from "./history.js";
 import type { HistoryItem, HistorySummary } from "./history.js";
@@ -187,16 +187,18 @@ async function readProjectStatus(
   startPath: string = process.cwd()
 ): Promise<ProjectStatus> {
   const metadata = await readProjectMetadata(startPath);
-  const [buildPlan, currentWork, findings, review, history, git, overviewResult, config, runState, onboardingResult] =
+  // The configured VCS decides which reader runs, so configuration is read
+  // before the rest rather than alongside it.
+  const config = await readProjectConfig(metadata.project.root);
+  const [buildPlan, currentWork, findings, review, history, git, overviewResult, runState, onboardingResult] =
     await Promise.all([
       readBuildPlan(metadata.project.root),
       readCurrentWork(metadata.project.root),
       readFindings(metadata.project.root),
       readIndependentReview(metadata.project.root),
       readHistory(metadata.project.root),
-      readGitStatus(metadata.project.root),
+      readVcsStatus(metadata.project.root, config.values.vcs),
       readOverviewStatus(metadata.project.root),
-      readProjectConfig(metadata.project.root),
       readRunState(metadata.project.root),
       readOnboardingStatus(metadata.project.root)
     ]);

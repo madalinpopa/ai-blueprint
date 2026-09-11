@@ -17,6 +17,15 @@ interface VcsStatusSummary {
 
 const execFileAsync = promisify(execFile);
 
+async function readVcsStatus(
+  projectRoot: string,
+  vcsType: VcsType
+): Promise<VcsStatusSummary> {
+  return vcsType === "jj"
+    ? readJjStatus(projectRoot)
+    : readGitStatus(projectRoot);
+}
+
 async function readGitStatus(projectRoot: string): Promise<VcsStatusSummary> {
   if (!(await isGitRepository(projectRoot))) {
     return unavailableSummary("git");
@@ -250,6 +259,6 @@ function unavailableSummary(vcsType: VcsType): VcsStatusSummary {
   };
 }
 
-export { readGitStatus, readJjStatus };
+export { readGitStatus, readJjStatus, readVcsStatus };
 
 export type { VcsStatusSummary };
