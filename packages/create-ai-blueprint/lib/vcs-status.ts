@@ -112,6 +112,130 @@ async function runGit(projectRoot: string, args: readonly string[]): Promise<str
   return result.stdout.trim();
 }
 
+async function readJjStatus(projectRoot: string): Promise<VcsStatusSummary> {
+  if (!(await isJjRepository(projectRoot))) {
+    return unavailableSummary("jj");
+  }
+
+  const summary = await runJj(projectRoot, ["diff", "--summary"]);
+  const changedFiles = summary
+    .split(/\r?\n/)
+    .filter((line) => line.length > 0)
+    .length;
+  const bookmarks = await readBookmarks(projectRoot);
+  const lastCommit = await runOptionalJj(projectRoot, [
+    "log",
+    "-r",
+    "@",
+    "--no-graph",
+    "-T",
+    "description.first_line()"
+  ]);
+  const bookmark = bookmarks[0] ?? null;
+  const upstream = bookmark
+    ? await readUpstreamBookmark(projectRoot, bookmark)
+    : null;
+  const divergence =
+    bookmark && upstream
+      ? await readJjDivergence(projectRoot, bookmark, upstream)
+      : { ahead: null, behind: null };
+
+  return {
+    available: true,
+    vcsType: "jj",
+    branch: bookmarks.length > 0 ? bookmarks.join(" ") : "(no bookmark)",
+    clean: changedFiles === 0,
+    changedFiles,
+    lastCommit: lastCommit || null,
+    upstream,
+    ahead: divergence.ahead,
+    behind: divergence.behind
+  };
+}
+
+async function isJjRepository(projectRoot: string): Promise<boolean> {
+  return (await runOptionalJj(projectRoot, ["root"])) !== null;
+}
+
+async function readBookmarks(projectRoot: string): Promise<string[]> {
+  const names = await runOptionalJj(projectRoot, [
+    "log",
+    "-r",
+    "heads(::@ & bookmarks())",
+    "--no-graph",
+    "-T",
+    'bookmarks.map(|bookmark| bookmark.name()).join(" ")'
+  ]);
+
+  return names ? names.split(" ").filter((name) => name.length > 0) : [];
+}
+
+async function readUpstreamBookmark(
+  projectRoot: string,
+  bookmark: string
+): Promise<string | null> {
+  const remotes = await runOptionalJj(projectRoot, [
+    "log",
+    "-r",
+    `remote_bookmarks(exact:${JSON.stringify(bookmark)})`,
+    "--no-graph",
+    "-T",
+    'remote_bookmarks.filter(|remote| remote.remote() != "git").map(|remote| remote.name() ++ "@" ++ remote.remote()).join("\n") ++ "\n"'
+  ]);
+  const [upstream] = (remotes ?? "").split(/\s+/).filter((name) => name.length > 0);
+
+  return upstream || null;
+}
+
+async function readJjDivergence(
+  projectRoot: string,
+  bookmark: string,
+  upstream: string
+): Promise<Pick<VcsStatusSummary, "ahead" | "behind">> {
+  const ahead = await countRevisions(projectRoot, `${upstream}..${bookmark}`);
+  const behind = await countRevisions(projectRoot, `${bookmark}..${upstream}`);
+
+  return ahead === null || behind === null
+    ? { ahead: null, behind: null }
+    : { ahead, behind };
+}
+
+// Jujutsu has no `rev-list --count`, so emit one character per revision.
+async function countRevisions(
+  projectRoot: string,
+  revset: string
+): Promise<number | null> {
+  const marks = await runOptionalJj(projectRoot, [
+    "log",
+    "-r",
+    revset,
+    "--no-graph",
+    "-T",
+    '"."'
+  ]);
+
+  return marks === null ? null : marks.length;
+}
+
+async function runOptionalJj(
+  projectRoot: string,
+  args: readonly string[]
+): Promise<string | null> {
+  try {
+    return await runJj(projectRoot, args);
+  } catch {
+    return null;
+  }
+}
+
+async function runJj(projectRoot: string, args: readonly string[]): Promise<string> {
+  const result = await execFileAsync("jj", ["--repository", projectRoot, ...args], {
+    encoding: "utf8",
+    maxBuffer: 1024 * 1024
+  });
+  return result.stdout.trim();
+}
+
 function unavailableSummary(vcsType: VcsType): VcsStatusSummary {
   return {
     available: false,
@@ -126,6 +250,6 @@ function unavailableSummary(vcsType: VcsType): VcsStatusSummary {
   };
 }
 
-export { readGitStatus };
+export { readGitStatus, readJjStatus };
 
 export type { VcsStatusSummary };
